@@ -1,6 +1,9 @@
-const express = require('express');
-const axios = require('axios');
-const bodyParser = require('body-parser');
+import express from 'express';
+import axios from 'axios';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
+
+dotenv.config();  // Load .env variables
 
 const app = express();
 const PORT = 3000;
@@ -10,11 +13,11 @@ app.use(bodyParser.json());
 
 // Route to call Omada API login
 app.post('/omada/login', async (req, res) => {
-  const loginUrl = 'https://aps1-api-omada-controller.tplinkcloud.com/a34134a3734d728c719318f3c6db575e/api/v2/login';
+  const loginUrl = `https://aps1-api-omada-controller.tplinkcloud.com/${process.env.OMADACID}/api/v2/login`;
 
   const loginBody = {
-    username: 'freqitsupp0rt@gmail.com',
-    password: 'Freqit@098765'
+    username: process.env.USER,
+    password: process.env.PASSWORD
   };
 
   try {
@@ -24,12 +27,18 @@ app.post('/omada/login', async (req, res) => {
       }
     });
 
-    res.status(200).json({
-      message: 'Login successful',
-      data: response.data
-    });
+    if (response.data.errorCode === 0) {
+      // Return only the token in the response
+      res.status(200).json({
+        token: response.data.result.token  // Extract token from response and return it
+      });
+    } else {
+      res.status(400).json({
+        message: 'Login failed',
+        error: response.data.msg || 'Unknown error'
+      });
+    }
   } catch (error) {
-    console.error('Login failed:', error?.response?.data || error.message);
     res.status(500).json({
       message: 'Login failed',
       error: error?.response?.data || error.message
